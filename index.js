@@ -173,7 +173,7 @@ app.get('/', (req, res) => {
 });
 
 // Set the webhook for Telegram
-const webhookUrl = "https://speech-to-text-telegram-bot.vercel.app";
+const webhookUrl = "https://speech-to-text-telegram-bot.vercel.app/webhook";
 
 bot.telegram.setWebhook(webhookUrl);
 
