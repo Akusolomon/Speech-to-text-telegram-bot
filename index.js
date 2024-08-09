@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const util = require('util');
 const express = require('express')
-
+function async allin(){
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
 const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
 
@@ -151,10 +151,11 @@ bot.launch()
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
+}
 const app = express();
 
 app.get('/', (req, res) => {
+   allin()
    res.send('Bot is running');
 });
 
