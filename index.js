@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const util = require('util');
 const express = require('express')
-function async allin(){
+
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
 const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
 
@@ -151,15 +151,34 @@ bot.launch()
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-}
+
 const app = express();
 
-app.get('/', (req, res) => {
-   allin()
-   res.send('Bot is running');
+// Use express.json() middleware to parse JSON bodies
+app.use(express.json());
+
+// Webhook handler
+app.post('/webhook', async (req, res) => {
+    try {
+        await bot.handleUpdate(req.body); // Pass updates to the bot
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Error handling update', error);
+        res.status(500).send('Error');
+    }
 });
 
+app.get('/', (req, res) => {
+    res.send('Bot is running');
+});
+
+// Set the webhook for Telegram
+const webhookUrl = "https://speech-to-text-telegram-bot.vercel.app";
+
+bot.telegram.setWebhook(webhookUrl);
+
+// Start the server
 const PORT = 8080 || 3000;
 app.listen(PORT, () => {
-   console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
