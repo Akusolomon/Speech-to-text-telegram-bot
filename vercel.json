@@ -7,7 +7,7 @@
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "index.js" },
-    { "src": "/", "dest": "index.js" }
+    { "src": "/webhook", "dest": "/index.js" },
+    { "src": "/", "dest": "/index.js" }
   ]
 }
