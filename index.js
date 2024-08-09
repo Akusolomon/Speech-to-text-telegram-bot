@@ -11,45 +11,10 @@ const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
 const ASSEMBLYAI_API_KEY = '9f8f92a29210461a8d654f8e73bb1665';
 
 // Start command
-   const usersFile = 'users.json';
-
-   // Function to read users from the file
-   const readUsers = () => {
-      if (fs.existsSync(usersFile)) {
-         const data = fs.readFileSync(usersFile, 'utf8');
-         return JSON.parse(data);
-      }
-      return [];
-   };
-
-   // Function to write users to the file
-   const writeUsers = (users) => {
-      const data = JSON.stringify(users, null, 2);
-      fs.writeFileSync(usersFile, data, 'utf8');
-   };
+   
 
    // Start command
    bot.start((ctx) => {
-      const user = {
-         id: ctx.from.id,
-         username: ctx.from.username,
-         first_name: ctx.from.first_name,
-         last_name: ctx.from.last_name,
-      };
-
-      // Read existing users
-      const users = readUsers();
-
-      // Check if user already exists
-      const userExists = users.some((u) => u.id === user.id);
-      if (!userExists) {
-         // Add new user to the list
-         users.push(user);
-         writeUsers(users);
-         console.log(`Added new user: ${user.username || user.first_name}`);
-      } else {
-         console.log(`User already exists: ${user.username || user.first_name}`);
-      }
    ctx.reply(
       'Welcome! Please choose an option:',
       Markup.inlineKeyboard([
