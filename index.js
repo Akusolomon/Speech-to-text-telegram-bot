@@ -5,7 +5,7 @@ const util = require('util');
 const express = require('express')
 
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
-const bot = new Telegraf('7285245110:AAHqfzSdyYbx_jytIJToscTkgdCrMll_ATU');
+const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
 let mydata;
 const supportedLanguages = [
     "Tigrigna",
