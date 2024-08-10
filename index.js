@@ -5,13 +5,271 @@ const util = require('util');
 const express = require('express')
 
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
-const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
+const bot = new Telegraf('7285245110:AAHqfzSdyYbx_jytIJToscTkgdCrMll_ATU');
+let mydata;
+const supportedLanguages = [
+    "Tigrigna",
+   "Afrikaans",
+  "Amharic",
+  "Arabic",
+  "Assamese",
+  "Azerbaijani",
+  "Bashkir",
+  "Belarusian",
+  "Bulgarian",
+  "Bengali",
+  "Bosnian",
+  "Catalan",
+  "Cebuano",
+  "Corsican",
+  "Czech",
+  "Welsh",
+  "Danish",
+  "German",
+  "Greek",
+  "English",
+  "Esperanto",
+  "Spanish",
+  "Estonian",
+  "Basque",
+  "Persian",
+  "Finnish",
+  "Fijian",
+  "French",
+  "West Frisian",
+  "Irish",
+  "Scottish Gaelic",
+  "Galician",
+  "Gujarati",
+  "Hausa",
+  "Hawaiian",
+  "Hebrew",
+  "Hindi",
+  "Hmong",
+  "Croatian",
+  "Haitian Creole",
+  "Hungarian",
+  "Armenian",
+  "Indonesian",
+  "Igbo",
+  "Ilocano",
+  "Icelandic",
+  "Italian",
+  "Japanese",
+  "Javanese",
+  "Georgian",
+  "Kazakh",
+  "Khmer",
+  "Kannada",
+  "Korean",
+  "Kurdish",
+  "Kyrgyz",
+  "Latin",
+  "Luxembourgish",
+  "Lao",
+  "Lithuanian",
+  "Latvian",
+  "Malagasy",
+  "Maori",
+  "Macedonian",
+  "Malayalam",
+  "Mongolian",
+  "Marathi",
+  "Malay",
+  "Maltese",
+  "Burmese",
+  "Nepali",
+  "Dutch",
+  "Norwegian",
+  "Nyanja",
+  "Punjabi",
+  "Polish",
+  "Pashto",
+  "Portuguese",
+  "Romanian",
+  "Russian",
+  "Kinyarwanda",
+  "Sanskrit",
+  "Sindhi",
+  "Northern Sami",
+  "Sinhala",
+  "Slovak",
+  "Slovenian",
+  "Samoan",
+  "Shona",
+  "Somali",
+  "Albanian",
+  "Serbian",
+  "Sesotho",
+  "Sundanese",
+  "Swedish",
+  "Swahili",
+  "Tamil",
+  "Telugu",
+  "Tajik",
+  "Thai",
+  "Turkmen",
+  "Tagalog",
+  "Turkish",
+  "Tatar",
+  "Uyghur",
+  "Ukrainian",
+  "Urdu",
+  "Uzbek",
+  "Vietnamese",
+  "Xhosa",
+  "Yiddish",
+  "Yoruba",
+  "Simplified Chinese",
+  "Traditional Chinese",
+  "Zulu"
+];
+const shortLanguages = [
+   "ti",
+   "af",
+  "am",
+  "ar",
+  "as",
+  "az",
+  "ba",
+  "be",
+  "bg",
+  "bn",
+  "bs",
+  "ca",
+  "ceb",
+  "co",
+  "cs",
+  "cy",
+  "da",
+  "de",
+  "el",
+  "en",
+  "eo",
+  "es",
+  "et",
+  "eu",
+  "fa",
+  "fi",
+  "fj",
+  "fr",
+  "fy",
+  "ga",
+  "gd",
+  "gl",
+  "gu",
+  "ha",
+  "haw",
+  "he",
+  "hi",
+  "hmn",
+  "hr",
+  "ht",
+  "hu",
+  "hy",
+  "id",
+  "ig",
+  "ilo",
+  "is",
+  "it",
+  "ja",
+  "jv",
+  "ka",
+  "kk",
+  "km",
+  "kn",
+  "ko",
+  "ku",
+  "ky",
+  "la",
+  "lb",
+  "lo",
+  "lt",
+  "lv",
+  "mg",
+  "mi",
+  "mk",
+  "ml",
+  "mn",
+  "mr",
+  "ms",
+  "mt",
+  "my",
+  "ne",
+  "nl",
+  "no",
+  "ny",
+  "pa",
+  "pl",
+  "ps",
+  "pt",
+  "ro",
+  "ru",
+  "rw",
+  "sa",
+  "sd",
+  "se",
+  "si",
+  "sk",
+  "sl",
+  "sm",
+  "sn",
+  "so",
+  "sq",
+  "sr",
+  "st",
+  "su",
+  "sv",
+  "sw",
+  "ta",
+  "te",
+  "tg",
+  "th",
+  "tk",
+  "tl",
+  "tr",
+  "tt",
+  "ug",
+  "uk",
+  "ur",
+  "uz",
+  "vi",
+  "xh",
+  "yi",
+  "yo",
+  "zh-CN",
+  "zh-TW",
+  "zu"
+];
+function getLanguageSelectionKeyboard() {
+  const inlineKeyboard = [];
+  const buttonsPerRow = 3; // Change this to adjust the number of buttons per row
 
+  for (let i = 0; i < supportedLanguages.length; i++) {
+    if (i % buttonsPerRow === 0) {
+      inlineKeyboard.push([]); // Start a new row
+    }
+    inlineKeyboard[Math.floor(i / buttonsPerRow)].push({
+      text: supportedLanguages[i],
+      callback_data: `button_1:${shortLanguages[i]}`,
+    });
+  }
+
+  return Markup.inlineKeyboard(inlineKeyboard);
+}
+
+ const translateText = async (text, targetLang) => {
+     const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`);
+     const data = await response.json();
+     return data.responseData.translatedText;
+ };
+
+ 
 // Replace 'YOUR_ASSEMBLYAI_API_KEY' with your actual AssemblyAI API key
 const ASSEMBLYAI_API_KEY = '9f8f92a29210461a8d654f8e73bb1665';
 
 // Start command
-   
+
 
    // Start command
    bot.start((ctx) => {
@@ -40,7 +298,7 @@ bot.on('voice', async (ctx) => {
    try {
      await ctx.sendChatAction('typing')
       const replyMessage = await ctx.reply("converting...")
-      
+
       const fileId = ctx.message.voice.file_id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
 
@@ -89,19 +347,37 @@ bot.on('voice', async (ctx) => {
          );
          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds before checking again
       } while (transcriptionResult.data.status !== 'completed');
-      
+
       const transcription = transcriptionResult.data.text;     ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id);
-      
+      mydata = transcription
       ctx.reply(`saying: ${transcription}`);
+ 
+     ctx.reply('Choose an option:', getLanguageSelectionKeyboard()
+   )
    } catch (error) {
       console.error('Error processing voice message:', error);
       ctx.reply('Sorry, an error occurred while processing your voice message.');
    }
 });
-
+bot.action(/(button_\d+):(.+)/, async (ctx) => {
+   translateText(mydata, ctx.match[2]).then(async (dd)=>{
+      ctx.reply(".....")
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      if(!mydata){ctx.reply("sorry can't convert try again")}
+ctx.reply(dd)
+}).catch(err => {ctx.reply("try send again")
+                console.log(err)})
+                
+})
 // Handle text messages
-bot.on('text', (ctx) => {
-   ctx.reply(`You said: ${ctx.message.text}`);
+bot.on('text', async (ctx) => {
+  console.log(ctx.message.text)
+   const data = await translateText(ctx.message.text, "ti")
+   ctx.reply("........")
+   await new Promise(resolve => setTimeout(resolve, 5000));
+   console.log(data)
+   if(!data){ctx.reply("sorry can't convert try again")}
+   ctx.reply(data)
 });
 
 // Handle unknown commands
@@ -116,6 +392,7 @@ bot.launch()
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
 
 const app = express();
 
