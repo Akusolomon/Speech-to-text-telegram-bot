@@ -3,9 +3,36 @@ const axios = require('axios');
 const fs = require('fs');
 const util = require('util');
 const express = require('express')
-
+const mongoose = require('mongoose')
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
+const uri = "mongodb+srv://melakusolomon94:0945787915f@cluster0.f5gi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+
+
+
+
+
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB Atlas connected successfully'))
+.catch((err) => console.error('MongoDB connection error:', err));
+
+// Example schema and model
+const Schema = mongoose.Schema;
+const userSchema = new mongoose.Schema({
+  telegramId: Number,
+  username: String,
+  firstName: String,
+  lastName: String,
+});
+const User = mongoose.model('User', userSchema);
 const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
+
+
+
+
 let mydata;
 const supportedLanguages = [
     "Tigrigna",
@@ -272,9 +299,33 @@ const ASSEMBLYAI_API_KEY = '9f8f92a29210461a8d654f8e73bb1665';
 
 
    // Start command
-   bot.start((ctx) => {
+   bot.start( async (ctx) => {
+      const user = ctx.from;
+  // Check if user exists in the database
+  const existingUser = await User.findOne({ telegramId: user.id });
+  if (existingUser) {
+    console.log("User already exists in the database.");
+    ctx.reply(`Welcome back, ${user.username}!`);
+  } else {
+    // Create a new user document
+    const newUser = new User({
+      telegramId: user.id,
+      username: user.username,
+      firstName: user.first_name,
+      lastName: user.last_name
+    });
+     try {
+      await newUser.save();
+      console.log("New user added to the database.");
+      ctx.reply(`Welcome, ${user.username}!`);
+    } catch (error) {
+      console.error("Error adding user to the database:", error);
+      ctx.reply("Sorry, there was an error. Please try again later.");
+    }
+  }
+   
    ctx.reply(
-      'Welcome! Please choose an option:',
+      'Please choose an option:',
       Markup.inlineKeyboard([
          Markup.button.callback('Help', 'help'),
          Markup.button.callback('Contact Developer', 'contact'),
