@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
   lastName: String,
 });
 const User = mongoose.model('User', userSchema);
-const bot = new Telegraf('7129189640:AAEh7Vr0CaMHFdChHFiuaa6DrcC5PdJ7zPc');
+const bot = new Telegraf('7129189640:AAFAcsaktNRaFSwbxEljVVbOCbKmULSEjNs');
 
 
 
