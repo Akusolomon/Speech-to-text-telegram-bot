@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
   lastName: String,
 });
 const User = mongoose.model('User', userSchema);
-const bot = new Telegraf('7129189640:AAFAcsaktNRaFSwbxEljVVbOCbKmULSEjNs');
+const bot = new Telegraf('7129189640:AAEWYWAS8UNeQ2HJU5m_knISK7t7RFrctwo');
 
 
 
@@ -349,7 +349,7 @@ bot.on('voice', async (ctx) => {
    try {
      await ctx.sendChatAction('typing')
       const replyMessage = await ctx.reply("converting...")
-console.log("voice")
+
       const fileId = ctx.message.voice.file_id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
 
@@ -401,7 +401,6 @@ console.log("voice")
 
       const transcription = transcriptionResult.data.text;     ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id);
       mydata = transcription
-      console.log(transcription)
       ctx.reply(`saying: ${transcription}`);
  
      ctx.reply('Choose an option:', getLanguageSelectionKeyboard()
@@ -437,10 +436,14 @@ bot.on('message', (ctx) => {
    ctx.reply('Send me a voice message and I will convert it to text!');
 });
 
+bot.catch((err, ctx) => {
+    console.error(`Error for ${ctx.updateType}`, err);
+    ctx.reply('An error occurred. Please try again later.');
+});
+
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
+process.once('SIGTERM', () => bot.stop('SIGTERM'));const { Telegraf,Markup } = require('telegraf');
 
 const app = express();
 
