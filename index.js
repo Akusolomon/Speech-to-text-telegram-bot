@@ -436,10 +436,6 @@ bot.on('message', (ctx) => {
    ctx.reply('Send me a voice message and I will convert it to text!');
 });
 
-bot.launch()
-   .then(() => console.log('Bot is running'))
-   .catch(err => console.error('Error starting the bot', err));
-
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
