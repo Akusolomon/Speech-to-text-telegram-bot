@@ -349,7 +349,7 @@ bot.on('voice', async (ctx) => {
    try {
      await ctx.sendChatAction('typing')
       const replyMessage = await ctx.reply("converting...")
-
+console.log("voice")
       const fileId = ctx.message.voice.file_id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
 
@@ -401,6 +401,7 @@ bot.on('voice', async (ctx) => {
 
       const transcription = transcriptionResult.data.text;     ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id);
       mydata = transcription
+      console.log(transcription)
       ctx.reply(`saying: ${transcription}`);
  
      ctx.reply('Choose an option:', getLanguageSelectionKeyboard()
