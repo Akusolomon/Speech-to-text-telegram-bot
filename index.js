@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
   lastName: String,
 });
 const User = mongoose.model('User', userSchema);
-const bot = new Telegraf('7129189640:AAEWYWAS8UNeQ2HJU5m_knISK7t7RFrctwo');
+const bot = new Telegraf('7129189640:AAGwj0N4Q498QvvhZX01RRQhhUiwuHA4xV8');
 
 
 
@@ -469,9 +469,7 @@ app.get('/', (req, res) => {
 });
 
 // Set the webhook for Telegram
-const webhookUrl = "https://speech-to-text-telegram-bot.vercel.app/webhook";
-
-bot.telegram.setWebhook(webhookUrl);
+bot.launch() .then(() => console.log('Bot is running')) .catch(err => console.error('Error starting the bot', err));
 
 // Start the server
 const PORT = 8080 || 3000;
