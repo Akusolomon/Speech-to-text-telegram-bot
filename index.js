@@ -423,6 +423,9 @@ ctx.reply(dd)
 // Handle text messages
 bot.on('text', async (ctx) => {
   console.log(ctx.message.text)
+  if (ctx.message.text == "akushadywantstostopthisbot07"){
+     bot.stop() 
+  }
    const data = await translateText(ctx.message.text, "ti")
    ctx.reply("........")
    await new Promise(resolve => setTimeout(resolve, 5000));
@@ -443,7 +446,7 @@ bot.catch((err, ctx) => {
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));const { Telegraf,Markup } = require('telegraf');
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 const app = express();
 
