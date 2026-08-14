@@ -20,9 +20,7 @@ mongoose.connect(uri, {
             socketTimeoutMS: 30000,
             connectTimeoutMS: 30000,
             serverSelectionTimeoutMS: 30000,
-        });
-.then(() => console.log('MongoDB Atlas connected successfully'))
-.catch((err) => console.error('MongoDB connection error:', err));
+        }).then(() => console.log('MongoDB Atlas connected successfully')).catch((err) => console.error('MongoDB connection error:', err));
 
 
 const Schema = mongoose.Schema;
