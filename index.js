@@ -12,10 +12,7 @@ require('dotenv').config();
 
 
 
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(uri)
 .then(() => console.log('MongoDB Atlas connected successfully'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
