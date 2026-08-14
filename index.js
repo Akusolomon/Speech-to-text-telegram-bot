@@ -6,7 +6,8 @@ const express = require('express')
 const mongoose = require('mongoose')
 const uri = process.env.MONGODB_URI;
 require('dotenv').config();
-
+console.log("Mongo URI exists:", !!process.env.MONGODB_URI);
+console.log("Bot token exists:", !!process.env.BOT_TOKEN);
 
 
 
