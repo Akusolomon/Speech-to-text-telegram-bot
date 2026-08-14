@@ -1,4 +1,3 @@
- const { Telegraf,Markup } = require('telegraf');.txt
 const { Telegraf,Markup } = require('telegraf');
 require('dotenv').config();
 const axios = require('axios');
