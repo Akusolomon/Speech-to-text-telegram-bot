@@ -14,7 +14,7 @@ console.log("Bot token", process.env.BOT_TOKEN);
 
 console.log("Bot token", process.env.BOT_TOKEN); // <--- ensure semicolon here
 
-mongoose.connect(uri)
+mongoose.connect('mongodb+srv://melakusolomon94_db_user:1234@tgbot.r8g9ylg.mongodb.net/?appName=tgbot')
 .then(() => console.log('MongoDB Atlas connected successfully'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
