@@ -10,7 +10,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 const SERVER_URL = process.env.SERVER_URL; // e.g., https://your-app.onrender.com or Vercel URL
 const PORT = process.env.PORT || 8080;
-
+console.log("ASEE", ASSEMBLYAI_API_KEY)
 if (!BOT_TOKEN) {
   console.error('FATAL ERROR: BOT_TOKEN is missing in environment variables.');
   process.exit(1);
