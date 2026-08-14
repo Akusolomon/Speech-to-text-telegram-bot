@@ -12,16 +12,17 @@ console.log("Bot token", process.env.BOT_TOKEN);
 
 
 
-
+console.log("Bot token", process.env.BOT_TOKEN); // <--- ensure semicolon here
 
 mongoose.connect(uri, {
-            maxPoolSize: 1,
-            minPoolSize: 1,
-            socketTimeoutMS: 30000,
-            connectTimeoutMS: 30000,
-            serverSelectionTimeoutMS: 30000,
-        }).then(() => console.log('MongoDB Atlas connected successfully')).catch((err) => console.error('MongoDB connection error:', err));
-
+    maxPoolSize: 1,
+    minPoolSize: 1,
+    socketTimeoutMS: 30000,
+    connectTimeoutMS: 30000,
+    serverSelectionTimeoutMS: 30000
+})
+.then(() => console.log('MongoDB Atlas connected successfully'))
+.catch((err) => console.error('MongoDB connection error:', err));
 
 const Schema = mongoose.Schema;
 const userSchema = new mongoose.Schema({
