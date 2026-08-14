@@ -4,8 +4,8 @@ const fs = require('fs');
 const util = require('util');
 const express = require('express')
 const mongoose = require('mongoose')
-// Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
 const uri = process.env.MONGODB_URI;
+require('dotenv').config();
 
 
 
@@ -19,7 +19,7 @@ mongoose.connect(uri, {
 .then(() => console.log('MongoDB Atlas connected successfully'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
-// Example schema and model
+
 const Schema = mongoose.Schema;
 const userSchema = new mongoose.Schema({
   telegramId: Number,
@@ -269,11 +269,11 @@ const shortLanguages = [
 ];
 function getLanguageSelectionKeyboard() {
   const inlineKeyboard = [];
-  const buttonsPerRow = 3; // Change this to adjust the number of buttons per row
+  const buttonsPerRow = 3;
 
   for (let i = 0; i < supportedLanguages.length; i++) {
     if (i % buttonsPerRow === 0) {
-      inlineKeyboard.push([]); // Start a new row
+      inlineKeyboard.push([]); 
     }
     inlineKeyboard[Math.floor(i / buttonsPerRow)].push({
       text: supportedLanguages[i],
@@ -291,22 +291,15 @@ function getLanguageSelectionKeyboard() {
  };
 
  
-// Replace 'YOUR_ASSEMBLYAI_API_KEY' with your actual AssemblyAI API key
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 
-// Start command
-
-
-   // Start command
    bot.start( async (ctx) => {
       const user = ctx.from;
-  // Check if user exists in the database
   const existingUser = await User.findOne({ telegramId: user.id });
   if (existingUser) {
     console.log("User already exists in the database.");
     ctx.reply(`Welcome back, ${user.username}!`);
   } else {
-    // Create a new user document
     const newUser = new User({
       telegramId: user.id,
       username: user.username,
@@ -332,7 +325,6 @@ const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
    );
 });
 
-// Help command
 bot.help((ctx) => {
    ctx.reply('Send me a voice message and I will convert it to text!');
 });
@@ -343,7 +335,6 @@ bot.action('help',(ctx) => {
 bot.action('contact',(ctx) => {
    ctx.reply("you can find me @akushady")
 })
-// Handle voice messages
 bot.on('voice', async (ctx) => {
    try {
      await ctx.sendChatAction('typing')
@@ -368,7 +359,6 @@ bot.on('voice', async (ctx) => {
 
       const audioUrl = uploadResponse.data.upload_url;
 
-      // Request transcription
       const transcriptionResponse = await axios.post(
          'https://api.assemblyai.com/v2/transcript',
          {
@@ -384,7 +374,6 @@ bot.on('voice', async (ctx) => {
 
       const transcriptId = transcriptionResponse.data.id;
 
-      // Wait for the transcription to complete
       let transcriptionResult;
       do {
          transcriptionResult = await axios.get(
@@ -395,7 +384,7 @@ bot.on('voice', async (ctx) => {
                },
             }
          );
-         await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds before checking again
+         await new Promise(resolve => setTimeout(resolve, 5000)); 
       } while (transcriptionResult.data.status !== 'completed');
 
       const transcription = transcriptionResult.data.text;     ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id);
@@ -419,7 +408,6 @@ ctx.reply(dd)
                 console.log(err)})
                 
 })
-// Handle text messages
 bot.on('text', async (ctx) => {
   console.log(ctx.message.text)
   if (ctx.message.text == "akushadywantstostopthisbot07"){
@@ -433,7 +421,6 @@ bot.on('text', async (ctx) => {
    ctx.reply(data)
 });
 
-// Handle unknown commands
 bot.on('message', (ctx) => {
    ctx.reply('Send me a voice message and I will convert it to text!');
 });
@@ -443,16 +430,13 @@ bot.catch((err, ctx) => {
     ctx.reply('An error occurred. Please try again later.');
 });
 
-// Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 const app = express();
 
-// Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
-// Webhook handler
 app.post('/webhook', async (req, res) => {
     try {
         await bot.handleUpdate(req.body); // Pass updates to the bot
