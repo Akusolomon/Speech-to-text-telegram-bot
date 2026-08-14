@@ -8,9 +8,9 @@ const mongoose = require('mongoose');
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const MONGODB_URI = process.env.MONGODB_URI;
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
-const SERVER_URL = process.env.SERVER_URL; // e.g., https://your-app.onrender.com or Vercel URL
+const SERVER_URL = process.env.SERVER_URL;
 const PORT = process.env.PORT || 8080;
-console.log("ASEE", ASSEMBLYAI_API_KEY)
+
 if (!BOT_TOKEN) {
   console.error('FATAL ERROR: BOT_TOKEN is missing in environment variables.');
   process.exit(1);
@@ -145,11 +145,9 @@ bot.on('voice', async (ctx) => {
     const fileId = ctx.message.voice.file_id;
     const fileLink = await ctx.telegram.getFileLink(fileId);
 
-    // Download voice message
     const response = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
     const buffer = Buffer.from(response.data, 'binary');
 
-    // Upload to AssemblyAI
     const uploadResponse = await axios.post(
       'https://api.assemblyai.com/v2/upload',
       buffer,
@@ -163,7 +161,6 @@ bot.on('voice', async (ctx) => {
 
     const audioUrl = uploadResponse.data.upload_url;
 
-    // Start transcription
     const transcriptionResponse = await axios.post(
       'https://api.assemblyai.com/v2/transcript',
       { audio_url: audioUrl },
@@ -177,7 +174,6 @@ bot.on('voice', async (ctx) => {
 
     const transcriptId = transcriptionResponse.data.id;
 
-    // Poll AssemblyAI status
     let transcriptionResult;
     do {
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -198,7 +194,6 @@ bot.on('voice', async (ctx) => {
 
     const transcription = transcriptionResult.data.text;
 
-    // Clean up temporary status message
     await ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id).catch(() => {});
 
     await ctx.reply(`Transcribed: "${transcription}"`);
@@ -209,12 +204,10 @@ bot.on('voice', async (ctx) => {
   }
 });
 
-// Translation action handler
 bot.action(/lang:(.+)/, async (ctx) => {
   await ctx.answerCbQuery();
   const targetLang = ctx.match[1];
 
-  // Retrieve original transcribed text from quote or previous message context
   const originalMessage = ctx.callbackQuery?.message?.reply_to_message?.text || "";
   const matchText = originalMessage.replace(/^Transcribed:\s*"/, '').replace(/"$/, '');
 
@@ -256,7 +249,6 @@ bot.catch((err, ctx) => {
 const app = express();
 app.use(express.json());
 
-// Primary Webhook Endpoint for Telegram
 app.post('/webhook', (req, res) => {
   bot.handleUpdate(req.body, res);
 });
@@ -266,32 +258,33 @@ app.get('/', (req, res) => {
 });
 
 const startServer = async () => {
-  try {
-    // 1. Connect MongoDB
-    if (MONGODB_URI) {
-      await mongoose.connect(MONGODB_URI, {
-        serverSelectionTimeoutMS: 10000,
-      });
-      console.log('✅ MongoDB Atlas connected successfully');
-    } else {
-      console.warn('⚠️ MONGODB_URI not provided. Skipping database connection.');
-    }
+  // 1. Start Express FIRST so Render detects the open port immediately
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Express server running on port ${PORT}`);
+  });
 
-    // 2. Set Webhook URL in Telegram
+  // 2. Connect MongoDB safely
+  try {
+    if (MONGODB_URI) {
+      await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
+      console.log('✅ MongoDB Atlas connected successfully');
+    }
+  } catch (err) {
+    console.error('❌ MongoDB Connection Error:', err.message);
+  }
+
+  // 3. Register Telegram Webhook safely
+  try {
     if (SERVER_URL) {
       const webhookUrl = `${SERVER_URL.replace(/\/$/, '')}/webhook`;
       await bot.telegram.setWebhook(webhookUrl);
       console.log(`✅ Webhook set successfully to: ${webhookUrl}`);
     } else {
-      console.warn('⚠️ SERVER_URL environment variable is missing. Webhook was not registered with Telegram.');
+      console.warn('⚠️ SERVER_URL variable missing. Skipping webhook registration.');
     }
-
-    // 3. Start Express Web Server
-    app.listen(PORT, () => {
-      console.log(`🚀 Express server running on port ${PORT}`);
-    });
   } catch (err) {
-    console.error('❌ Failed to start application:', err.message);
+    console.error('❌ Telegram Webhook Registration Failed:', err.message);
+    console.error('💡 Hint: Check if BOT_TOKEN in Render environment variables is valid.');
   }
 };
 
