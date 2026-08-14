@@ -103,6 +103,10 @@ const translateText = async (text, targetLang) => {
 // ---------------------------------------------------------------------------
 const bot = new Telegraf(BOT_TOKEN);
 
+// Store transcriptions per user (in memory - will be lost on server restart)
+// For production, consider using Redis or MongoDB
+const userTranscriptions = new Map();
+
 bot.start(async (ctx) => {
   const user = ctx.from;
   try {
@@ -140,7 +144,7 @@ bot.action('contact', (ctx) => ctx.reply("You can find me @akushady"));
 bot.on('voice', async (ctx) => {
   try {
     await ctx.sendChatAction('typing');
-    const replyMessage = await ctx.reply("Converting voice to text...");
+    const replyMessage = await ctx.reply("🎵 Converting voice to text...");
 
     const fileId = ctx.message.voice.file_id;
     const fileLink = await ctx.telegram.getFileLink(fileId);
@@ -175,6 +179,9 @@ bot.on('voice', async (ctx) => {
     const transcriptId = transcriptionResponse.data.id;
 
     let transcriptionResult;
+    let attempts = 0;
+    const maxAttempts = 30;
+    
     do {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       transcriptionResult = await axios.get(
@@ -183,44 +190,99 @@ bot.on('voice', async (ctx) => {
           headers: { authorization: ASSEMBLYAI_API_KEY },
         }
       );
+      attempts++;
     } while (
       transcriptionResult.data.status !== 'completed' &&
-      transcriptionResult.data.status !== 'error'
+      transcriptionResult.data.status !== 'error' &&
+      attempts < maxAttempts
     );
 
-    if (transcriptionResult.data.status === 'error') {
-      throw new Error('AssemblyAI transcription failed.');
+    if (transcriptionResult.data.status === 'error' || attempts >= maxAttempts) {
+      throw new Error('AssemblyAI transcription failed or timed out.');
     }
 
     const transcription = transcriptionResult.data.text;
 
+    // Store transcription for this user
+    userTranscriptions.set(ctx.from.id, transcription);
+    
+    // Also store in the message for fallback
     await ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id).catch(() => {});
 
-    await ctx.reply(`Transcribed: "${transcription}"`);
-    await ctx.reply('Select a language to translate this text:', getLanguageSelectionKeyboard());
+    await ctx.reply(`📝 "${transcription}"`);
+    await ctx.reply('🌍 Select a language to translate:', getLanguageSelectionKeyboard());
+    
   } catch (error) {
     console.error('Error processing voice message:', error.message);
-    await ctx.reply('Sorry, an error occurred while processing your voice message.');
+    await ctx.reply('❌ Sorry, an error occurred while processing your voice message.');
   }
 });
 
+// Translation handler with FIX
 bot.action(/lang:(.+)/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const targetLang = ctx.match[1];
+  try {
+    await ctx.answerCbQuery();
+    const targetLang = ctx.match[1];
+    const userId = ctx.from.id;
+    
+    // Get the language name for display
+    const langIndex = shortLanguages.indexOf(targetLang);
+    const langName = langIndex !== -1 ? supportedLanguages[langIndex] : targetLang;
 
-  const originalMessage = ctx.callbackQuery?.message?.reply_to_message?.text || "";
-  const matchText = originalMessage.replace(/^Transcribed:\s*"/, '').replace(/"$/, '');
+    // METHOD 1: Get transcription from memory
+    let transcription = userTranscriptions.get(userId);
 
-  if (!matchText) {
-    return ctx.reply("Could not retrieve original text for translation. Please send the voice message again.");
+    // METHOD 2: If not in memory, try to get it from the message
+    if (!transcription) {
+      try {
+        // Check if there's a reply message
+        const replyMsg = ctx.callbackQuery?.message?.reply_to_message;
+        if (replyMsg?.text) {
+          const match = replyMsg.text.match(/"([^"]*)"/);
+          if (match) {
+            transcription = match[1];
+          }
+        }
+      } catch (e) {
+        console.log('Could not extract from reply message:', e.message);
+      }
+    }
+
+    // METHOD 3: If still no transcription, check if we have it in the message text
+    if (!transcription) {
+      try {
+        const msgText = ctx.callbackQuery?.message?.text || '';
+        const match = msgText.match(/"([^"]*)"/);
+        if (match) {
+          transcription = match[1];
+        }
+      } catch (e) {
+        console.log('Could not extract from message text:', e.message);
+      }
+    }
+
+    if (!transcription) {
+      await ctx.reply('❌ No text to translate. Please send a voice message first.');
+      return;
+    }
+
+    // Show translating status
+    await ctx.reply(`🔄 Translating to ${langName}...`);
+
+    const translated = await translateText(transcription, targetLang);
+    
+    if (!translated) {
+      await ctx.reply('❌ Translation failed. Please try again.');
+      return;
+    }
+
+    // Send the translation
+    await ctx.reply(`🌍 Translation (${langName}):\n\n"${translated}"`);
+    
+  } catch (error) {
+    console.error('Translation error:', error.message);
+    await ctx.reply('❌ Sorry, an error occurred during translation.');
   }
-
-  const translated = await translateText(matchText, targetLang);
-  if (!translated) {
-    return ctx.reply("Sorry, translation failed. Please try again.");
-  }
-
-  return ctx.reply(`Translation (${targetLang}):\n${translated}`);
 });
 
 bot.on('text', async (ctx) => {
@@ -236,6 +298,15 @@ bot.on('text', async (ctx) => {
     return ctx.reply("Sorry, translation failed. Please try again.");
   }
   return ctx.reply(data);
+});
+
+// Handle any other messages
+bot.on('message', async (ctx) => {
+  if (ctx.message.text) {
+    // Already handled by text handler
+    return;
+  }
+  await ctx.reply('Send me a voice message and I will convert it to text!');
 });
 
 bot.catch((err, ctx) => {
@@ -257,8 +328,18 @@ app.get('/', (req, res) => {
   res.send('Telegram Voice Translation Bot is running!');
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    dbConnected: mongoose.connection.readyState === 1,
+    transcriptionsCount: userTranscriptions.size,
+    timestamp: new Date().toISOString()
+  });
+});
+
 const startServer = async () => {
-  // 1. Start Express FIRST so Render detects the open port immediately
+  // 1. Start Express first
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Express server running on port ${PORT}`);
   });
@@ -266,7 +347,11 @@ const startServer = async () => {
   // 2. Connect MongoDB safely
   try {
     if (MONGODB_URI) {
-      await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
+      await mongoose.connect(MONGODB_URI, { 
+        serverSelectionTimeoutMS: 10000,
+        maxPoolSize: 1,
+        minPoolSize: 1,
+      });
       console.log('✅ MongoDB Atlas connected successfully');
     }
   } catch (err) {
@@ -284,7 +369,7 @@ const startServer = async () => {
     }
   } catch (err) {
     console.error('❌ Telegram Webhook Registration Failed:', err.message);
-    console.error('💡 Hint: Check if BOT_TOKEN in Render environment variables is valid.');
+    console.error('💡 Hint: Check if BOT_TOKEN in environment variables is valid.');
   }
 };
 
