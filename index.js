@@ -1,459 +1,298 @@
-const { Telegraf,Markup } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 require('dotenv').config();
 const axios = require('axios');
-const fs = require('fs');
-const util = require('util');
-const express = require('express')
-const mongoose = require('mongoose')
-const uri = process.env.MONGODB_URI;
+const express = require('express');
+const mongoose = require('mongoose');
 
-console.log("Mongo URI", process.env.MONGODB_URI);
-console.log("Bot token", process.env.BOT_TOKEN);
+// Environment Variables
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const MONGODB_URI = process.env.MONGODB_URI;
+const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
+const SERVER_URL = process.env.SERVER_URL; // e.g., https://your-app.onrender.com or Vercel URL
+const PORT = process.env.PORT || 8080;
 
+if (!BOT_TOKEN) {
+  console.error('FATAL ERROR: BOT_TOKEN is missing in environment variables.');
+  process.exit(1);
+}
 
-
-console.log("Bot token", process.env.BOT_TOKEN); // <--- ensure semicolon here
-
-mongoose.connect('mongodb+srv://melakusolomon94_db_user:1234@tgbot.r8g9ylg.mongodb.net/?appName=tgbot')
-.then(() => console.log('MongoDB Atlas connected successfully'))
-.catch((err) => console.error('MongoDB connection error:', err));
-
-const Schema = mongoose.Schema;
+// ---------------------------------------------------------------------------
+// 1. Database Configuration
+// ---------------------------------------------------------------------------
 const userSchema = new mongoose.Schema({
-  telegramId: Number,
+  telegramId: { type: Number, required: true, unique: true },
   username: String,
   firstName: String,
   lastName: String,
 });
+
 const User = mongoose.model('User', userSchema);
-const bot = new Telegraf(process.env.BOT_TOKEN);
 
-
-
-let mydata;
+// ---------------------------------------------------------------------------
+// 2. Languages & Keyboards
+// ---------------------------------------------------------------------------
 const supportedLanguages = [
-    "Tigrigna",
-   "Afrikaans",
-  "Amharic",
-  "Arabic",
-  "Assamese",
-  "Azerbaijani",
-  "Bashkir",
-  "Belarusian",
-  "Bulgarian",
-  "Bengali",
-  "Bosnian",
-  "Catalan",
-  "Cebuano",
-  "Corsican",
-  "Czech",
-  "Welsh",
-  "Danish",
-  "German",
-  "Greek",
-  "English",
-  "Esperanto",
-  "Spanish",
-  "Estonian",
-  "Basque",
-  "Persian",
-  "Finnish",
-  "Fijian",
-  "French",
-  "West Frisian",
-  "Irish",
-  "Scottish Gaelic",
-  "Galician",
-  "Gujarati",
-  "Hausa",
-  "Hawaiian",
-  "Hebrew",
-  "Hindi",
-  "Hmong",
-  "Croatian",
-  "Haitian Creole",
-  "Hungarian",
-  "Armenian",
-  "Indonesian",
-  "Igbo",
-  "Ilocano",
-  "Icelandic",
-  "Italian",
-  "Japanese",
-  "Javanese",
-  "Georgian",
-  "Kazakh",
-  "Khmer",
-  "Kannada",
-  "Korean",
-  "Kurdish",
-  "Kyrgyz",
-  "Latin",
-  "Luxembourgish",
-  "Lao",
-  "Lithuanian",
-  "Latvian",
-  "Malagasy",
-  "Maori",
-  "Macedonian",
-  "Malayalam",
-  "Mongolian",
-  "Marathi",
-  "Malay",
-  "Maltese",
-  "Burmese",
-  "Nepali",
-  "Dutch",
-  "Norwegian",
-  "Nyanja",
-  "Punjabi",
-  "Polish",
-  "Pashto",
-  "Portuguese",
-  "Romanian",
-  "Russian",
-  "Kinyarwanda",
-  "Sanskrit",
-  "Sindhi",
-  "Northern Sami",
-  "Sinhala",
-  "Slovak",
-  "Slovenian",
-  "Samoan",
-  "Shona",
-  "Somali",
-  "Albanian",
-  "Serbian",
-  "Sesotho",
-  "Sundanese",
-  "Swedish",
-  "Swahili",
-  "Tamil",
-  "Telugu",
-  "Tajik",
-  "Thai",
-  "Turkmen",
-  "Tagalog",
-  "Turkish",
-  "Tatar",
-  "Uyghur",
-  "Ukrainian",
-  "Urdu",
-  "Uzbek",
-  "Vietnamese",
-  "Xhosa",
-  "Yiddish",
-  "Yoruba",
-  "Simplified Chinese",
-  "Traditional Chinese",
-  "Zulu"
+  "Tigrigna", "Afrikaans", "Amharic", "Arabic", "Assamese", "Azerbaijani",
+  "Bashkir", "Belarusian", "Bulgarian", "Bengali", "Bosnian", "Catalan",
+  "Cebuano", "Corsican", "Czech", "Welsh", "Danish", "German", "Greek",
+  "English", "Esperanto", "Spanish", "Estonian", "Basque", "Persian",
+  "Finnish", "Fijian", "French", "West Frisian", "Irish", "Scottish Gaelic",
+  "Galician", "Gujarati", "Hausa", "Hawaiian", "Hebrew", "Hindi", "Hmong",
+  "Croatian", "Haitian Creole", "Hungarian", "Armenian", "Indonesian", "Igbo",
+  "Ilocano", "Icelandic", "Italian", "Japanese", "Javanese", "Georgian",
+  "Kazakh", "Khmer", "Kannada", "Korean", "Kurdish", "Kyrgyz", "Latin",
+  "Luxembourgish", "Lao", "Lithuanian", "Latvian", "Malagasy", "Maori",
+  "Macedonian", "Malayalam", "Mongolian", "Marathi", "Malay", "Maltese",
+  "Burmese", "Nepali", "Dutch", "Norwegian", "Nyanja", "Punjabi", "Polish",
+  "Pashto", "Portuguese", "Romanian", "Russian", "Kinyarwanda", "Sanskrit",
+  "Sindhi", "Northern Sami", "Sinhala", "Slovak", "Slovenian", "Samoan",
+  "Shona", "Somali", "Albanian", "Serbian", "Sesotho", "Sundanese",
+  "Swedish", "Swahili", "Tamil", "Telugu", "Tajik", "Thai", "Turkmen",
+  "Tagalog", "Turkish", "Tatar", "Uyghur", "Ukrainian", "Urdu", "Uzbek",
+  "Vietnamese", "Xhosa", "Yiddish", "Yoruba", "Simplified Chinese",
+  "Traditional Chinese", "Zulu"
 ];
+
 const shortLanguages = [
-   "ti",
-   "af",
-  "am",
-  "ar",
-  "as",
-  "az",
-  "ba",
-  "be",
-  "bg",
-  "bn",
-  "bs",
-  "ca",
-  "ceb",
-  "co",
-  "cs",
-  "cy",
-  "da",
-  "de",
-  "el",
-  "en",
-  "eo",
-  "es",
-  "et",
-  "eu",
-  "fa",
-  "fi",
-  "fj",
-  "fr",
-  "fy",
-  "ga",
-  "gd",
-  "gl",
-  "gu",
-  "ha",
-  "haw",
-  "he",
-  "hi",
-  "hmn",
-  "hr",
-  "ht",
-  "hu",
-  "hy",
-  "id",
-  "ig",
-  "ilo",
-  "is",
-  "it",
-  "ja",
-  "jv",
-  "ka",
-  "kk",
-  "km",
-  "kn",
-  "ko",
-  "ku",
-  "ky",
-  "la",
-  "lb",
-  "lo",
-  "lt",
-  "lv",
-  "mg",
-  "mi",
-  "mk",
-  "ml",
-  "mn",
-  "mr",
-  "ms",
-  "mt",
-  "my",
-  "ne",
-  "nl",
-  "no",
-  "ny",
-  "pa",
-  "pl",
-  "ps",
-  "pt",
-  "ro",
-  "ru",
-  "rw",
-  "sa",
-  "sd",
-  "se",
-  "si",
-  "sk",
-  "sl",
-  "sm",
-  "sn",
-  "so",
-  "sq",
-  "sr",
-  "st",
-  "su",
-  "sv",
-  "sw",
-  "ta",
-  "te",
-  "tg",
-  "th",
-  "tk",
-  "tl",
-  "tr",
-  "tt",
-  "ug",
-  "uk",
-  "ur",
-  "uz",
-  "vi",
-  "xh",
-  "yi",
-  "yo",
-  "zh-CN",
-  "zh-TW",
-  "zu"
+  "ti", "af", "am", "ar", "as", "az", "ba", "be", "bg", "bn", "bs", "ca",
+  "ceb", "co", "cs", "cy", "da", "de", "el", "en", "eo", "es", "et", "eu",
+  "fa", "fi", "fj", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "he",
+  "hi", "hmn", "hr", "ht", "hu", "hy", "id", "ig", "ilo", "is", "it", "ja",
+  "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky", "la", "lb", "lo", "lt",
+  "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
+  "no", "ny", "pa", "pl", "ps", "pt", "ro", "ru", "rw", "sa", "sd", "se",
+  "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "st", "su", "sv", "sw",
+  "ta", "te", "tg", "th", "tk", "tl", "tr", "tt", "ug", "uk", "ur", "uz",
+  "vi", "xh", "yi", "yo", "zh-CN", "zh-TW", "zu"
 ];
+
 function getLanguageSelectionKeyboard() {
   const inlineKeyboard = [];
   const buttonsPerRow = 3;
 
   for (let i = 0; i < supportedLanguages.length; i++) {
     if (i % buttonsPerRow === 0) {
-      inlineKeyboard.push([]); 
+      inlineKeyboard.push([]);
     }
     inlineKeyboard[Math.floor(i / buttonsPerRow)].push({
       text: supportedLanguages[i],
-      callback_data: `button_1:${shortLanguages[i]}`,
+      callback_data: `lang:${shortLanguages[i]}`,
     });
   }
 
   return Markup.inlineKeyboard(inlineKeyboard);
 }
 
- const translateText = async (text, targetLang) => {
-     const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`);
-     const data = await response.json();
-     return data.responseData.translatedText;
- };
+// ---------------------------------------------------------------------------
+// 3. Helper Functions
+// ---------------------------------------------------------------------------
+const translateText = async (text, targetLang) => {
+  try {
+    const response = await axios.get(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`
+    );
+    return response.data?.responseData?.translatedText || null;
+  } catch (error) {
+    console.error("Translation API error:", error.message);
+    return null;
+  }
+};
 
- 
-const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
+// ---------------------------------------------------------------------------
+// 4. Bot Handlers
+// ---------------------------------------------------------------------------
+const bot = new Telegraf(BOT_TOKEN);
 
-   bot.start( async (ctx) => {
-      const user = ctx.from;
-  const existingUser = await User.findOne({ telegramId: user.id });
-  if (existingUser) {
-    console.log("User already exists in the database.");
-    ctx.reply(`Welcome back, ${user.username}!`);
-  } else {
-    const newUser = new User({
-      telegramId: user.id,
-      username: user.username,
-      firstName: user.first_name,
-      lastName: user.last_name
-    });
-     try {
+bot.start(async (ctx) => {
+  const user = ctx.from;
+  try {
+    const existingUser = await User.findOne({ telegramId: user.id });
+    if (existingUser) {
+      await ctx.reply(`Welcome back, ${user.username || user.first_name}!`);
+    } else {
+      const newUser = new User({
+        telegramId: user.id,
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      });
       await newUser.save();
-      console.log("New user added to the database.");
-      ctx.reply(`Welcome, ${user.username}!`);
-    } catch (error) {
-      console.error("Error adding user to the database:", error);
-      ctx.reply("Sorry, there was an error. Please try again later.");
+      await ctx.reply(`Welcome, ${user.username || user.first_name}!`);
     }
+  } catch (error) {
+    console.error("Error managing user in database:", error.message);
+    await ctx.reply(`Welcome!`);
   }
-   
-   ctx.reply(
-      'Please choose an option:',
-      Markup.inlineKeyboard([
-         Markup.button.callback('Help', 'help'),
-         Markup.button.callback('Contact Developer', 'contact'),
-      ])
-   );
+
+  return ctx.reply(
+    'Please choose an option:',
+    Markup.inlineKeyboard([
+      [Markup.button.callback('Help', 'help')],
+      [Markup.button.callback('Contact Developer', 'contact')],
+    ])
+  );
 });
 
-bot.help((ctx) => {
-   ctx.reply('Send me a voice message and I will convert it to text!');
-});
-bot.action('help',(ctx) => {
-   ctx.reply("send a voice message and i will convert it to text  ")
-});
+bot.help((ctx) => ctx.reply('Send me a voice message and I will convert it to text!'));
+bot.action('help', (ctx) => ctx.reply("Send a voice message and I will convert it to text."));
+bot.action('contact', (ctx) => ctx.reply("You can find me @akushady"));
 
-bot.action('contact',(ctx) => {
-   ctx.reply("you can find me @akushady")
-})
 bot.on('voice', async (ctx) => {
-   try {
-     await ctx.sendChatAction('typing')
-      const replyMessage = await ctx.reply("converting...")
+  try {
+    await ctx.sendChatAction('typing');
+    const replyMessage = await ctx.reply("Converting voice to text...");
 
-      const fileId = ctx.message.voice.file_id;
-      const fileLink = await ctx.telegram.getFileLink(fileId);
+    const fileId = ctx.message.voice.file_id;
+    const fileLink = await ctx.telegram.getFileLink(fileId);
 
-      // Download the voice message
-      const response = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
-      const buffer = Buffer.from(response.data, 'binary');
-      const uploadResponse = await axios.post(
-         'https://api.assemblyai.com/v2/upload',
-         buffer,
-         {
-            headers: {
-               'authorization': ASSEMBLYAI_API_KEY,
-               'content-type': 'application/octet-stream',
-            },
-         }
+    // Download voice message
+    const response = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data, 'binary');
+
+    // Upload to AssemblyAI
+    const uploadResponse = await axios.post(
+      'https://api.assemblyai.com/v2/upload',
+      buffer,
+      {
+        headers: {
+          authorization: ASSEMBLYAI_API_KEY,
+          'content-type': 'application/octet-stream',
+        },
+      }
+    );
+
+    const audioUrl = uploadResponse.data.upload_url;
+
+    // Start transcription
+    const transcriptionResponse = await axios.post(
+      'https://api.assemblyai.com/v2/transcript',
+      { audio_url: audioUrl },
+      {
+        headers: {
+          authorization: ASSEMBLYAI_API_KEY,
+          'content-type': 'application/json',
+        },
+      }
+    );
+
+    const transcriptId = transcriptionResponse.data.id;
+
+    // Poll AssemblyAI status
+    let transcriptionResult;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      transcriptionResult = await axios.get(
+        `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+        {
+          headers: { authorization: ASSEMBLYAI_API_KEY },
+        }
       );
+    } while (
+      transcriptionResult.data.status !== 'completed' &&
+      transcriptionResult.data.status !== 'error'
+    );
 
-      const audioUrl = uploadResponse.data.upload_url;
+    if (transcriptionResult.data.status === 'error') {
+      throw new Error('AssemblyAI transcription failed.');
+    }
 
-      const transcriptionResponse = await axios.post(
-         'https://api.assemblyai.com/v2/transcript',
-         {
-            audio_url: audioUrl,
-         },
-         {
-            headers: {
-               authorization: ASSEMBLYAI_API_KEY,
-               'content-type': 'application/json',
-            },
-         }
-      );
+    const transcription = transcriptionResult.data.text;
 
-      const transcriptId = transcriptionResponse.data.id;
+    // Clean up temporary status message
+    await ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id).catch(() => {});
 
-      let transcriptionResult;
-      do {
-         transcriptionResult = await axios.get(
-            `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
-            {
-               headers: {
-                  authorization: ASSEMBLYAI_API_KEY,
-               },
-            }
-         );
-         await new Promise(resolve => setTimeout(resolve, 5000)); 
-      } while (transcriptionResult.data.status !== 'completed');
-
-      const transcription = transcriptionResult.data.text;     ctx.telegram.deleteMessage(ctx.chat.id, replyMessage.message_id);
-      mydata = transcription
-      ctx.reply(`saying: ${transcription}`);
- 
-     ctx.reply('Choose an option:', getLanguageSelectionKeyboard()
-   )
-   } catch (error) {
-      console.error('Error processing voice message:', error);
-      ctx.reply('Sorry, an error occurred while processing your voice message.');
-   }
-});
-bot.action(/(button_\d+):(.+)/, async (ctx) => {
-   translateText(mydata, ctx.match[2]).then(async (dd)=>{
-      ctx.reply(".....")
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      if(!mydata){ctx.reply("sorry can't convert try again")}
-ctx.reply(dd)
-}).catch(err => {ctx.reply("try send again")
-                console.log(err)})
-                
-})
-bot.on('text', async (ctx) => {
-  console.log(ctx.message.text)
-  if (ctx.message.text == "akushadywantstostopthisbot07"){
-     bot.stop() 
+    await ctx.reply(`Transcribed: "${transcription}"`);
+    await ctx.reply('Select a language to translate this text:', getLanguageSelectionKeyboard());
+  } catch (error) {
+    console.error('Error processing voice message:', error.message);
+    await ctx.reply('Sorry, an error occurred while processing your voice message.');
   }
-   const data = await translateText(ctx.message.text, "ti")
-   ctx.reply("........")
-   await new Promise(resolve => setTimeout(resolve, 5000));
-   console.log(data)
-   if(!data){ctx.reply("sorry can't convert try again")}
-   ctx.reply(data)
 });
 
-bot.on('message', (ctx) => {
-   ctx.reply('Send me a voice message and I will convert it to text!');
+// Translation action handler
+bot.action(/lang:(.+)/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const targetLang = ctx.match[1];
+
+  // Retrieve original transcribed text from quote or previous message context
+  const originalMessage = ctx.callbackQuery?.message?.reply_to_message?.text || "";
+  const matchText = originalMessage.replace(/^Transcribed:\s*"/, '').replace(/"$/, '');
+
+  if (!matchText) {
+    return ctx.reply("Could not retrieve original text for translation. Please send the voice message again.");
+  }
+
+  const translated = await translateText(matchText, targetLang);
+  if (!translated) {
+    return ctx.reply("Sorry, translation failed. Please try again.");
+  }
+
+  return ctx.reply(`Translation (${targetLang}):\n${translated}`);
+});
+
+bot.on('text', async (ctx) => {
+  const text = ctx.message.text;
+
+  if (text === "akushadywantstostopthisbot07") {
+    await ctx.reply("Stopping bot server...");
+    process.exit(0);
+  }
+
+  const data = await translateText(text, "ti");
+  if (!data) {
+    return ctx.reply("Sorry, translation failed. Please try again.");
+  }
+  return ctx.reply(data);
 });
 
 bot.catch((err, ctx) => {
-    console.error(`Error for ${ctx.updateType}`, err);
-    ctx.reply('An error occurred. Please try again later.');
+  console.error(`Telegraf error for update type [${ctx.updateType}]:`, err);
+  ctx.reply('An unexpected error occurred. Please try again.');
 });
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
+// ---------------------------------------------------------------------------
+// 5. Express Webhook Server Initialization
+// ---------------------------------------------------------------------------
 const app = express();
-
 app.use(express.json());
 
-app.post('/webhook', async (req, res) => {
-    try {
-        await bot.handleUpdate(req.body); // Pass updates to the bot
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('Error handling update', error);
-        res.status(500).send('Error');
-    }
+// Primary Webhook Endpoint for Telegram
+app.post('/webhook', (req, res) => {
+  bot.handleUpdate(req.body, res);
 });
 
 app.get('/', (req, res) => {
-    res.send('Bot is running');
+  res.send('Telegram Voice Translation Bot is running!');
 });
 
-// Set the webhook for Telegram
-bot.launch() .then(() => console.log('Bot is running')) .catch(err => console.error('Error starting the bot', err));
+const startServer = async () => {
+  try {
+    // 1. Connect MongoDB
+    if (MONGODB_URI) {
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 10000,
+      });
+      console.log('✅ MongoDB Atlas connected successfully');
+    } else {
+      console.warn('⚠️ MONGODB_URI not provided. Skipping database connection.');
+    }
 
-// Start the server
-const PORT = 8080 || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+    // 2. Set Webhook URL in Telegram
+    if (SERVER_URL) {
+      const webhookUrl = `${SERVER_URL.replace(/\/$/, '')}/webhook`;
+      await bot.telegram.setWebhook(webhookUrl);
+      console.log(`✅ Webhook set successfully to: ${webhookUrl}`);
+    } else {
+      console.warn('⚠️ SERVER_URL environment variable is missing. Webhook was not registered with Telegram.');
+    }
+
+    // 3. Start Express Web Server
+    app.listen(PORT, () => {
+      console.log(`🚀 Express server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start application:', err.message);
+  }
+};
+
+startServer();
