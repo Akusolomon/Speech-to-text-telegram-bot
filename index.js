@@ -5,7 +5,7 @@ const util = require('util');
 const express = require('express')
 const mongoose = require('mongoose')
 // Replace 'YOUR_BOT_TOKEN' with your actual bot token from BotFather
-const uri = "mongodb+srv://melakusolomon94:0945787915f@cluster0.f5gi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+const uri = process.env.MONGODB_URI;
 
 
 
@@ -28,8 +28,7 @@ const userSchema = new mongoose.Schema({
   lastName: String,
 });
 const User = mongoose.model('User', userSchema);
-const bot = new Telegraf('7129189640:AAGwj0N4Q498QvvhZX01RRQhhUiwuHA4xV8');
-
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 
 
@@ -293,7 +292,7 @@ function getLanguageSelectionKeyboard() {
 
  
 // Replace 'YOUR_ASSEMBLYAI_API_KEY' with your actual AssemblyAI API key
-const ASSEMBLYAI_API_KEY = '9f8f92a29210461a8d654f8e73bb1665';
+const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 
 // Start command
 
