@@ -7,8 +7,8 @@ const express = require('express')
 const mongoose = require('mongoose')
 const uri = process.env.MONGODB_URI;
 
-console.log("Mongo URI exists:", process.env.MONGODB_URI);
-console.log("Bot token exists:", process.env.BOT_TOKEN);
+console.log("Mongo URI", process.env.MONGODB_URI);
+console.log("Bot token", process.env.BOT_TOKEN);
 
 
 
